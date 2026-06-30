@@ -8,12 +8,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //    Find them in Supabase Dashboard → Project Settings → API.
 //    This is the ONLY place you need to put credentials.
 // ------------------------------------------------------------
-export const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
-export const SUPABASE_ANON_KEY = 'YOUR-SUPABASE-ANON-PUBLIC-KEY';
+export const SUPABASE_URL = 'https://afooyyydhlwngzssgqih.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmb295eXlkaGx3bmd6c3NncWloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NDQxMjgsImV4cCI6MjA5NDIyMDEyOH0.KG0XO0oP_2MpewHoIwTtbrKg5FkyOYRUtVzLH1MSJiE';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });
+
 
 // Name of the existing public storage bucket used for photos & signatures
 export const STORAGE_BUCKET = 'story';
