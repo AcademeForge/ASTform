@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#0A0E27" />
 <title>Log in — AcademeForge Scholars Test</title>
-<link rel="icon" type="image/png" href="/IMG/af_logo.png" />
+<link rel="icon" type="image/png" href="/IMG/AF LOGO 1.jpeg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="assets/style.css" />
@@ -15,7 +15,7 @@
 <header class="navbar">
   <div class="container nav-inner">
     <a href="index.html" class="brand">
-      <img src="/IMG/af_logo.png" alt="" class="brand-logo" data-logo-fallback />
+      <img src="/IMG/AF LOGO 1.jpeg" alt="" class="brand-logo" data-logo-fallback />
       <span class="brand-logo-fallback">AF</span>
       <span class="brand-text">
         <span class="brand-name">AcademeForge</span>
@@ -50,8 +50,8 @@
       <!-- SIGN IN -->
       <form id="signInForm">
         <div class="form-group">
-          <label for="siEmail">Email address</label>
-          <input class="input" type="email" id="siEmail" autocomplete="email" required placeholder="you@example.com" />
+          <label for="siLoginId">Student ID / phone number</label>
+          <input class="input" type="tel" id="siLoginId" autocomplete="username" required placeholder="e.g. 9876543210" />
         </div>
         <div class="form-group">
           <label for="siPassword">Password</label>
@@ -68,8 +68,13 @@
           <div class="field-hint">For a school account, use the school/center name instead.</div>
         </div>
         <div class="form-group">
-          <label for="suEmail">Email address</label>
-          <input class="input" type="email" id="suEmail" autocomplete="email" required placeholder="you@example.com" />
+          <label for="suLoginId">Student ID / phone number</label>
+          <input class="input" type="tel" id="suLoginId" autocomplete="username" required placeholder="e.g. 9876543210" />
+          <div class="field-hint">This is what you'll use to log in — choose your phone number.</div>
+        </div>
+        <div class="form-group">
+          <label for="suEmail">Email address <span class="muted" style="font-weight:400;">(optional)</span></label>
+          <input class="input" type="email" id="suEmail" autocomplete="email" placeholder="you@example.com" />
         </div>
         <div class="form-group">
           <label for="suPassword">Create a password</label>
@@ -91,7 +96,7 @@
 </footer>
 
 <script type="module">
-  import { supabase, setYear } from './assets/app.js';
+  import { getSession, signInWithPassword, signUp, setYear } from './assets/app.js';
   setYear();
 
   const params = new URLSearchParams(location.search);
@@ -124,39 +129,44 @@
 
   // Already logged in? skip straight ahead.
   (async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) location.href = nextPage;
+    const session = await getSession();
+    if (session) location.href = nextPage;
   })();
 
   signInForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     alertBox.innerHTML = '';
-    const email = document.getElementById('siEmail').value.trim();
+    const loginId = document.getElementById('siLoginId').value.trim();
     const password = document.getElementById('siPassword').value;
     const btn = document.getElementById('siSubmit');
     setBusy(btn, true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(btn, false, 'Sign in');
-    if (error) { showAlert('error', error.message); return; }
-    location.href = nextPage;
+    try {
+      await signInWithPassword(loginId, password);
+      location.href = nextPage;
+    } catch (err) {
+      showAlert('error', err.message);
+    } finally {
+      setBusy(btn, false, 'Sign in');
+    }
   });
 
   signUpForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     alertBox.innerHTML = '';
     const full_name = document.getElementById('suName').value.trim();
+    const loginId = document.getElementById('suLoginId').value.trim();
     const email = document.getElementById('suEmail').value.trim();
     const password = document.getElementById('suPassword').value;
     const btn = document.getElementById('suSubmit');
     setBusy(btn, true);
-    const { data, error } = await supabase.auth.signUp({
-      email, password, options: { data: { full_name } },
-    });
-    setBusy(btn, false, 'Create account');
-    if (error) { showAlert('error', error.message); return; }
-    if (data.session) { location.href = nextPage; return; }
-    showAlert('success', 'Account created. Check your email to confirm it, then sign in.');
-    tabSignIn.click();
+    try {
+      await signUp(loginId, full_name, password, email || null);
+      location.href = nextPage;
+    } catch (err) {
+      showAlert('error', err.message);
+    } finally {
+      setBusy(btn, false, 'Create account');
+    }
   });
 </script>
 </body>
