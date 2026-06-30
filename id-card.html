@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0A0E27" />
+<title>Admit Card — AcademeForge Scholars Test</title>
+<link rel="icon" type="image/png" href="/IMG/AF LOGO 1.jpeg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="navbar no-print">
+  <div class="container nav-inner">
+    <a href="index.html" class="brand">
+      <img src="/IMG/AF LOGO 1.jpeg" alt="" class="brand-logo" data-logo-fallback />
+      <span class="brand-logo-fallback">AF</span>
+      <span class="brand-text">
+        <span class="brand-name">AcademeForge</span>
+        <span class="brand-sub">Scholars Test · AST</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="index.html#about">About AST</a>
+      <a href="register-student.html">Register a student</a>
+      <a href="my-registrations.html">My registrations</a>
+    </nav>
+    <div class="nav-actions" data-auth-area></div>
+    <button class="nav-burger" id="navBurger" aria-label="Open menu"><span></span></button>
+  </div>
+</header>
+<div class="mobile-drawer no-print" id="mobileDrawer">
+  <div class="mobile-drawer-panel">
+    <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close menu">✕</button>
+    <a href="index.html#about">About AST</a>
+    <a href="register-student.html">Register a student</a>
+    <a href="my-registrations.html">My registrations</a>
+  </div>
+</div>
+
+<main class="section" style="padding-block:40px 80px;">
+  <div class="container" style="max-width:760px;">
+
+    <div id="checkingArea" class="page-loader no-print"><span class="spinner spinner-dark"></span> Loading admit card…</div>
+    <div id="errorArea" style="display:none;" class="no-print">
+      <div class="form-card text-center">
+        <h2>Couldn't load this registration</h2>
+        <p class="mt-8" id="errorMsg">It may not belong to your account, or the link is wrong.</p>
+        <a href="my-registrations.html" class="btn btn-primary mt-16">Go to my registrations</a>
+      </div>
+    </div>
+
+    <div id="cardArea" style="display:none;">
+      <div class="text-center mb-24 no-print">
+        <span class="eyebrow">Registration successful</span>
+        <h2 class="mt-16">Your AST Admit Card</h2>
+        <p class="mt-8">Save or print this — you'll need it on test day.</p>
+      </div>
+
+      <div id="idcardPrintArea" class="idcard-wrap">
+        <div class="idcard">
+          <div class="idcard-head">
+            <div class="idcard-head-brand">
+              <img src="/IMG/AF LOGO 1.jpeg" alt="" />
+              <img src="/IMG/ast.png" alt="" style="width:34px;height:34px;border-radius:8px;" />
+              <div class="idcard-head-brand-text">
+                <strong>AcademeForge Scholars Test</strong>
+                <span>AST 2026 · Admit Card</span>
+              </div>
+            </div>
+            <div class="idcard-seal">VERIFIED</div>
+          </div>
+
+          <div class="idcard-body">
+            <div class="idcard-photo"><img id="cardPhoto" alt="Student photo" /></div>
+            <div class="idcard-fields">
+              <div class="idcard-roll" id="cardRoll">AST-2026-0000</div>
+              <div class="idcard-field-grid">
+                <div class="idcard-field"><label>Name</label><span id="cardName">—</span></div>
+                <div class="idcard-field"><label>Class</label><span id="cardClass">—</span></div>
+                <div class="idcard-field"><label>Gender</label><span id="cardGender">—</span></div>
+                <div class="idcard-field"><label>Date of birth</label><span id="cardDob">—</span></div>
+                <div class="idcard-field"><label>School / center</label><span id="cardSchool">—</span></div>
+                <div class="idcard-field"><label>School code</label><span id="cardSchoolCode">—</span></div>
+                <div class="idcard-field"><label>Subjects</label><span id="cardSubjects">—</span></div>
+                <div class="idcard-field"><label>Plan</label><span id="cardPlan">—</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="idcard-divider"></div>
+
+          <div class="idcard-foot">
+            <div class="idcard-sig-box">
+              <img id="cardSignature" alt="Signature" />
+              <span class="idcard-sig-label">Signature</span>
+            </div>
+            <img class="idcard-qr" id="cardQr" alt="QR" />
+          </div>
+
+          <div class="idcard-note">
+            Carry this admit card and a valid school ID to the test center. Roll number <b id="cardNoteRoll">—</b> is your only reference for results &amp; certificates.
+          </div>
+        </div>
+      </div>
+
+      <div class="idcard-actions no-print">
+        <button class="btn btn-gold btn-lg" id="printBtn">Print / Save as PDF</button>
+        <a href="register-student.html" class="btn btn-outline btn-lg">Register another student</a>
+        <a href="my-registrations.html" class="btn btn-ghost btn-lg">My registrations</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="footer section-tight no-print">
+  <div class="container footer-bottom" style="border:none;margin:0;padding:0;">
+    <span>© <span id="yearNow"></span> AcademeForge.</span>
+    <span>AcademeForge Scholars Test — an AcademeForge Initiative.</span>
+  </div>
+</footer>
+
+<script type="module">
+  import { supabase, requireSession, wireAuthHeader, wireMobileDrawer, wireLogoFallbacks, setYear } from './assets/app.js';
+
+  setYear();
+  wireMobileDrawer();
+  wireLogoFallbacks();
+
+  const params = new URLSearchParams(location.search);
+  const regId = params.get('id');
+
+  (async () => {
+    const session = await requireSession();
+    if (!session) return;
+    await wireAuthHeader();
+
+    if (!regId) {
+      document.getElementById('checkingArea').style.display = 'none';
+      document.getElementById('errorMsg').textContent = 'No registration ID was given.';
+      document.getElementById('errorArea').style.display = '';
+      return;
+    }
+
+    const { data: row, error } = await supabase
+      .from('ast_registrations')
+      .select('*')
+      .eq('id', regId)
+      .eq('registration_type', 'student')
+      .single();
+
+    document.getElementById('checkingArea').style.display = 'none';
+
+    if (error || !row) {
+      document.getElementById('errorArea').style.display = '';
+      return;
+    }
+
+    document.getElementById('cardPhoto').src = row.photo_url || '';
+    document.getElementById('cardSignature').src = row.signature_url || '';
+    document.getElementById('cardRoll').textContent = row.roll_number || '—';
+    document.getElementById('cardNoteRoll').textContent = row.roll_number || '—';
+    document.getElementById('cardName').textContent = row.student_name || '—';
+    document.getElementById('cardClass').textContent = row.student_class ? `Class ${row.student_class}` : '—';
+    document.getElementById('cardGender').textContent = row.gender || '—';
+    document.getElementById('cardDob').textContent = row.date_of_birth || '—';
+    document.getElementById('cardSchool').textContent = row.linked_school_name || '—';
+    document.getElementById('cardSchoolCode').textContent = row.linked_school_code || '—';
+    document.getElementById('cardSubjects').textContent = (row.subjects || []).join(', ') || '—';
+    document.getElementById('cardPlan').textContent = row.plan ? (row.plan[0].toUpperCase() + row.plan.slice(1)) : '—';
+    document.getElementById('cardQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(row.roll_number || regId)}`;
+
+    document.getElementById('cardArea').style.display = '';
+  })();
+
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+</script>
+</body>
+</html>
