@@ -16,6 +16,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 
+
 // Name of the existing public storage bucket used for photos & signatures
 export const STORAGE_BUCKET = 'story';
 // Name of the single edge function that saves registrations + sends email
