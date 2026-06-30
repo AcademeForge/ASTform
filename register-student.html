@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#0A0E27" />
 <title>Register as a student — AcademeForge Scholars Test</title>
-<link rel="icon" type="image/png" href="/IMG/af_logo.png" />
+<link rel="icon" type="image/png" href="/IMG/AF LOGO 1.jpeg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="assets/style.css" />
@@ -15,7 +15,7 @@
 <header class="navbar">
   <div class="container nav-inner">
     <a href="index.html" class="brand">
-      <img src="/IMG/af_logo.png" alt="" class="brand-logo" data-logo-fallback />
+      <img src="/IMG/AF LOGO 1.jpeg" alt="" class="brand-logo" data-logo-fallback />
       <span class="brand-logo-fallback">AF</span>
       <span class="brand-text">
         <span class="brand-name">AcademeForge</span>
@@ -239,11 +239,9 @@
   const schoolMap = new Map(); // label -> {name, code}
   async function loadSchools() {
     const hint = document.getElementById('schoolPickHint');
-    const { data, error } = await supabase
-      .from('ast_registrations')
-      .select('school_name, school_code')
-      .eq('registration_type', 'school')
-      .order('school_name', { ascending: true });
+    // Uses a SECURITY DEFINER function so only school_name/school_code are
+    // ever exposed to other users — not principal name, phone, or email.
+    const { data, error } = await supabase.rpc('get_school_directory');
     if (error) { hint.textContent = 'Could not load schools — refresh the page to try again.'; return; }
     const datalist = document.getElementById('schoolListOptions');
     datalist.innerHTML = '';
