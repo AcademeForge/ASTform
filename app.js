@@ -1,0 +1,185 @@
+// ============================================================
+// AST shared app module — Supabase client + auth + small utils
+// ============================================================
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ------------------------------------------------------------
+// 1. REQUIRED SETUP — paste your project's values here.
+//    Find them in Supabase Dashboard → Project Settings → API.
+//    This is the ONLY place you need to put credentials.
+// ------------------------------------------------------------
+export const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+export const SUPABASE_ANON_KEY = 'YOUR-SUPABASE-ANON-PUBLIC-KEY';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+});
+
+// Name of the existing public storage bucket used for photos & signatures
+export const STORAGE_BUCKET = 'story';
+// Name of the single edge function that saves registrations + sends email
+export const REGISTER_FUNCTION = 'ast-register';
+
+// ------------------------------------------------------------
+// Auth helpers
+// ------------------------------------------------------------
+export async function getSession() {
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+export async function getCurrentUser() {
+  const { data } = await supabase.auth.getUser();
+  return data.user || null;
+}
+
+/** Redirects to login.html (carrying ?next=) if there is no active session. */
+export async function requireSession() {
+  const session = await getSession();
+  if (!session) {
+    const next = encodeURIComponent(location.pathname.split('/').pop() + location.search);
+    location.href = `login.html?next=${next}`;
+    return null;
+  }
+  return session;
+}
+
+export async function signOut() {
+  await supabase.auth.signOut();
+  location.href = 'index.html';
+}
+
+// ------------------------------------------------------------
+// Header auth-state wiring — call on every page that has the
+// standard navbar markup (data-auth-area attribute).
+// ------------------------------------------------------------
+export async function wireAuthHeader() {
+  const area = document.querySelector('[data-auth-area]');
+  if (!area) return;
+  const user = await getCurrentUser();
+  if (user) {
+    const label = user.email ? user.email.split('@')[0] : 'Account';
+    area.innerHTML = `
+      <a href="my-registrations.html" class="nav-user-chip" title="${escapeHtml(user.email || '')}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        ${escapeHtml(label)}
+      </a>
+      <button class="btn btn-ghost btn-sm" id="navLogoutBtn" type="button">Log out</button>
+    `;
+    document.getElementById('navLogoutBtn')?.addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `
+      <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+      <a href="register-student.html" class="btn btn-gold btn-sm">Register</a>
+    `;
+  }
+}
+
+// ------------------------------------------------------------
+// Mobile drawer wiring — standard markup with #navBurger / #mobileDrawer
+// ------------------------------------------------------------
+export function wireMobileDrawer() {
+  const burger = document.getElementById('navBurger');
+  const drawer = document.getElementById('mobileDrawer');
+  const closeBtn = document.getElementById('mobileDrawerClose');
+  if (!burger || !drawer) return;
+  const open = () => drawer.classList.add('open');
+  const close = () => drawer.classList.remove('open');
+  burger.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  drawer.addEventListener('click', (e) => { if (e.target === drawer) close(); });
+}
+
+// ------------------------------------------------------------
+// Logo fallback — shows a generated monogram if the real
+// image file (e.g. /IMG/af_logo.png) isn't present yet.
+// ------------------------------------------------------------
+export function wireLogoFallbacks() {
+  document.querySelectorAll('img[data-logo-fallback]').forEach((img) => {
+    img.addEventListener('error', () => {
+      img.style.display = 'none';
+      const fb = img.nextElementSibling;
+      if (fb && fb.classList.contains('brand-logo-fallback')) fb.style.display = 'flex';
+    }, { once: true });
+  });
+}
+
+// ------------------------------------------------------------
+// Toasts
+// ------------------------------------------------------------
+function ensureToastStack() {
+  let stack = document.querySelector('.toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+
+export function showToast(message, type = 'info', duration = 4200) {
+  const stack = ensureToastStack();
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = message;
+  stack.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ------------------------------------------------------------
+// Small utils
+// ------------------------------------------------------------
+export function escapeHtml(str = '') {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+export function fmtDate(value) {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return value; }
+}
+
+export function setYear(id = 'yearNow') {
+  const el = document.getElementById(id);
+  if (el) el.textContent = new Date().getFullYear();
+}
+
+// ------------------------------------------------------------
+// Storage upload helper — uploads a Blob to the shared "story"
+// bucket under the signed-in user's own folder, returns the
+// public URL. Used for both student photo and signature.
+// ------------------------------------------------------------
+export async function uploadToStory(userId, blob, kind, ext = 'png') {
+  const path = `${userId}/${kind}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, blob, {
+    contentType: blob.type || `image/${ext}`,
+    upsert: false,
+  });
+  if (error) throw new Error(`Upload failed (${kind}): ${error.message}`);
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ------------------------------------------------------------
+// Calls the single edge function that saves a registration row
+// and triggers the email notification.
+// ------------------------------------------------------------
+export async function submitRegistration(payload) {
+  const session = await getSession();
+  if (!session) throw new Error('Please log in again — your session expired.');
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${REGISTER_FUNCTION}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  let json;
+  try { json = await res.json(); } catch { json = null; }
+  if (!res.ok || !json || json.ok === false) {
+    throw new Error((json && json.error) || `Something went wrong (HTTP ${res.status}). Please try again.`);
+  }
+  return json;
+}
