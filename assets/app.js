@@ -20,13 +20,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 export const STORAGE_BUCKET = 'story';
 // Name of the single edge function that saves registrations + sends email
 export const REGISTER_FUNCTION = 'ast-register';
-// Name of the edge function that handles file uploads (photo / signature).
-// Uploads go through this function — never directly to Supabase Storage from
-// the browser — because our auth is custom (ast_sessions), not Supabase
-// Auth, so auth.uid() is always null client-side and RLS would reject a
-// direct anon-key upload. This function verifies the caller's ast_sessions
-// token itself, then uploads with the service role key.
-export const UPLOAD_FUNCTION = 'ast-upload';
 
 // ------------------------------------------------------------
 // Auth — CUSTOM Student ID/phone system (NOT Supabase Auth).
@@ -149,9 +142,9 @@ export async function wireAuthHeader() {
   if (!area) return;
   const user = await getCurrentUser();
   if (user) {
-    const label = user.full_name || user.login_id || 'Account';
+    const label = user.name || user.student_id || 'Account';
     area.innerHTML = `
-      <a href="my-registrations.html" class="nav-user-chip" title="${escapeHtml(user.login_id || '')}">
+      <a href="my-registrations.html" class="nav-user-chip" title="${escapeHtml(user.student_id || '')}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
         ${escapeHtml(label)}
       </a>
@@ -237,42 +230,19 @@ export function setYear(id = 'yearNow') {
 }
 
 // ------------------------------------------------------------
-// Storage upload helper — sends a Blob to the ast-upload edge
-// function (which verifies our custom session token, then
-// uploads to the shared "story" bucket using the service role
-// key). Used for both student photo and signature.
-//
-// Note: the `userId` parameter is kept for backward-compatible
-// call sites, but is no longer used to build the storage path —
-// the server derives the path from the AUTHENTICATED account
-// instead, so a client can never write into another user's
-// folder regardless of what gets passed here.
+// Storage upload helper — uploads a Blob to the shared "story"
+// bucket under the signed-in user's own folder, returns the
+// public URL. Used for both student photo and signature.
 // ------------------------------------------------------------
 export async function uploadToStory(userId, blob, kind, ext = 'png') {
-  const session = await getSession();
-  if (!session) throw new Error('Please log in again — your session expired.');
-
-  const fileName = `${kind}.${ext}`;
-  const file = (blob instanceof File)
-    ? blob
-    : new File([blob], fileName, { type: blob.type || `image/${ext}` });
-
-  const formData = new FormData();
-  formData.append('file', file, fileName);
-  formData.append('kind', kind);
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${UPLOAD_FUNCTION}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    body: formData,
+  const path = `${userId}/${kind}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, blob, {
+    contentType: blob.type || `image/${ext}`,
+    upsert: false,
   });
-
-  let json;
-  try { json = await res.json(); } catch { json = null; }
-  if (!res.ok || !json || json.ok === false) {
-    throw new Error((json && json.error) || `Upload failed (${kind}, HTTP ${res.status}). Please try again.`);
-  }
-  return json.url;
+  if (error) throw new Error(`Upload failed (${kind}): ${error.message}`);
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 // ------------------------------------------------------------
