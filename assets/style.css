@@ -370,9 +370,13 @@ p{color:var(--ink-soft);}
    ========================================================= */
 .steps{display:grid;grid-template-columns:1fr 1fr;gap:0;position:relative;}
 @media (max-width:760px){.steps{grid-template-columns:1fr;}}
-.step{padding:8px 28px 8px 0;position:relative;}
-.step:first-child{border-right:1px dashed var(--paper-line);}
-@media (max-width:760px){.step:first-child{border-right:none;border-bottom:1px dashed var(--paper-line);padding-bottom:28px;margin-bottom:28px;}}
+.step{padding:8px 28px;position:relative;}
+.step:first-child{padding-left:0;border-right:1px dashed var(--paper-line);}
+.step:last-child{padding-right:0;}
+@media (max-width:760px){
+  .step{padding-left:0;padding-right:0;}
+  .step:first-child{border-right:none;border-bottom:1px dashed var(--paper-line);padding-bottom:28px;margin-bottom:28px;}
+}
 .step-num{
   font-family:var(--font-display);font-weight:700;font-size:1.05rem;
   width:38px;height:38px;border-radius:50%;background:var(--navy-950);color:var(--gold-300);
