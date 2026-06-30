@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0A0E27" />
+<title>Log in — AcademeForge Scholars Test</title>
+<link rel="icon" type="image/png" href="/IMG/af_logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="brand">
+      <img src="/IMG/af_logo.png" alt="" class="brand-logo" data-logo-fallback />
+      <span class="brand-logo-fallback">AF</span>
+      <span class="brand-text">
+        <span class="brand-name">AcademeForge</span>
+        <span class="brand-sub">Scholars Test · AST</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="index.html#about">About AST</a>
+      <a href="index.html#fees">Fees</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+    <div class="nav-actions"><a href="index.html" class="btn btn-ghost btn-sm">Back to AST home</a></div>
+  </div>
+</header>
+
+<main class="auth-shell">
+  <div class="auth-card">
+    <div class="text-center mb-24">
+      <span class="eyebrow">Account access</span>
+      <h2 class="mt-16">Sign in to register for AST</h2>
+      <p class="mt-8" style="font-size:.9rem;">Schools and students must be signed in before filling any AST form.</p>
+    </div>
+
+    <div class="form-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabSignIn" type="button">Sign in</button>
+        <button class="auth-tab" id="tabSignUp" type="button">Create account</button>
+      </div>
+
+      <div id="authAlert"></div>
+
+      <!-- SIGN IN -->
+      <form id="signInForm">
+        <div class="form-group">
+          <label for="siEmail">Email address</label>
+          <input class="input" type="email" id="siEmail" autocomplete="email" required placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label for="siPassword">Password</label>
+          <input class="input" type="password" id="siPassword" autocomplete="current-password" required placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="siSubmit">Sign in</button>
+      </form>
+
+      <!-- SIGN UP -->
+      <form id="signUpForm" style="display:none;">
+        <div class="form-group">
+          <label for="suName">Your full name</label>
+          <input class="input" type="text" id="suName" autocomplete="name" required placeholder="e.g. Rahul Kumar" />
+          <div class="field-hint">For a school account, use the school/center name instead.</div>
+        </div>
+        <div class="form-group">
+          <label for="suEmail">Email address</label>
+          <input class="input" type="email" id="suEmail" autocomplete="email" required placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label for="suPassword">Create a password</label>
+          <input class="input" type="password" id="suPassword" autocomplete="new-password" required minlength="6" placeholder="At least 6 characters" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="suSubmit">Create account</button>
+      </form>
+    </div>
+
+    <p class="text-center muted mt-24" style="font-size:.82rem;">By continuing you agree this account will be used to submit AST registration details.</p>
+  </div>
+</main>
+
+<footer class="footer section-tight">
+  <div class="container footer-bottom" style="border:none;margin:0;padding:0;">
+    <span>© <span id="yearNow"></span> AcademeForge.</span>
+    <span>AcademeForge Scholars Test — an AcademeForge Initiative.</span>
+  </div>
+</footer>
+
+<script type="module">
+  import { supabase, setYear } from './assets/app.js';
+  setYear();
+
+  const params = new URLSearchParams(location.search);
+  const nextPage = params.get('next') || 'my-registrations.html';
+
+  const tabSignIn = document.getElementById('tabSignIn');
+  const tabSignUp = document.getElementById('tabSignUp');
+  const signInForm = document.getElementById('signInForm');
+  const signUpForm = document.getElementById('signUpForm');
+  const alertBox = document.getElementById('authAlert');
+
+  tabSignIn.addEventListener('click', () => {
+    tabSignIn.classList.add('active'); tabSignUp.classList.remove('active');
+    signInForm.style.display = ''; signUpForm.style.display = 'none';
+    alertBox.innerHTML = '';
+  });
+  tabSignUp.addEventListener('click', () => {
+    tabSignUp.classList.add('active'); tabSignIn.classList.remove('active');
+    signUpForm.style.display = ''; signInForm.style.display = 'none';
+    alertBox.innerHTML = '';
+  });
+
+  function showAlert(type, message) {
+    alertBox.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+  }
+  function setBusy(btn, busy, idleLabel) {
+    btn.disabled = busy;
+    btn.innerHTML = busy ? `<span class="spinner"></span> Please wait…` : idleLabel;
+  }
+
+  // Already logged in? skip straight ahead.
+  (async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) location.href = nextPage;
+  })();
+
+  signInForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alertBox.innerHTML = '';
+    const email = document.getElementById('siEmail').value.trim();
+    const password = document.getElementById('siPassword').value;
+    const btn = document.getElementById('siSubmit');
+    setBusy(btn, true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setBusy(btn, false, 'Sign in');
+    if (error) { showAlert('error', error.message); return; }
+    location.href = nextPage;
+  });
+
+  signUpForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alertBox.innerHTML = '';
+    const full_name = document.getElementById('suName').value.trim();
+    const email = document.getElementById('suEmail').value.trim();
+    const password = document.getElementById('suPassword').value;
+    const btn = document.getElementById('suSubmit');
+    setBusy(btn, true);
+    const { data, error } = await supabase.auth.signUp({
+      email, password, options: { data: { full_name } },
+    });
+    setBusy(btn, false, 'Create account');
+    if (error) { showAlert('error', error.message); return; }
+    if (data.session) { location.href = nextPage; return; }
+    showAlert('success', 'Account created. Check your email to confirm it, then sign in.');
+    tabSignIn.click();
+  });
+</script>
+</body>
+</html>
