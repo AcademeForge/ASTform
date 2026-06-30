@@ -22,16 +22,88 @@ export const STORAGE_BUCKET = 'story';
 export const REGISTER_FUNCTION = 'ast-register';
 
 // ------------------------------------------------------------
-// Auth helpers
+// Auth — CUSTOM Student ID/phone system (NOT Supabase Auth).
+// Mirrors the main AcademeForge app's pattern: a bearer token from the
+// ast-auth edge function, cached in localStorage. supabase-js above is
+// still used (anon key) for plain data reads like the school directory,
+// but never for auth.
 // ------------------------------------------------------------
+export const AUTH_FUNCTION = 'ast-auth';
+
+const LS_TOKEN = 'ast_session_token';
+const LS_ACCOUNT = 'ast_account';
+const LS_DEVICE_ID = 'ast_device_id';
+
+function getDeviceId() {
+  let id = localStorage.getItem(LS_DEVICE_ID);
+  if (!id) {
+    id = 'astdev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 12);
+    localStorage.setItem(LS_DEVICE_ID, id);
+  }
+  return id;
+}
+
+function getDeviceName() {
+  const ua = navigator.userAgent || '';
+  if (/Android/i.test(ua)) return 'Android Browser';
+  if (/iPhone|iPad/i.test(ua)) return 'iOS Browser';
+  if (/Windows/i.test(ua)) return 'Windows Browser';
+  if (/Mac/i.test(ua)) return 'Mac Browser';
+  return 'Web Browser';
+}
+
+async function callAuth(action, body = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${AUTH_FUNCTION}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...body }),
+  });
+  let json;
+  try { json = await res.json(); } catch { json = null; }
+  if (!res.ok || !json || json.ok === false) {
+    throw new Error((json && json.error) || `Something went wrong (HTTP ${res.status}). Please try again.`);
+  }
+  return json;
+}
+
+function saveSession(token, account) {
+  localStorage.setItem(LS_TOKEN, token);
+  localStorage.setItem(LS_ACCOUNT, JSON.stringify(account));
+}
+
+/** Logs in with a Student ID / phone number + password. */
+export async function signInWithPassword(login_id, password) {
+  const result = await callAuth('login', {
+    login_id, password, device_id: getDeviceId(), device_name: getDeviceName(),
+  });
+  saveSession(result.session_token, result.account);
+  return result.account;
+}
+
+/** Creates a new account with a Student ID / phone number + password. */
+export async function signUp(login_id, full_name, password, email) {
+  const result = await callAuth('signup', {
+    login_id, full_name, password, email, device_id: getDeviceId(), device_name: getDeviceName(),
+  });
+  saveSession(result.session_token, result.account);
+  return result.account;
+}
+
+/** Returns a session-shaped object ({ access_token, user }) or null — kept
+ *  the same shape as the old Supabase Auth session so existing pages
+ *  (which read session.user.id / session.access_token) don't need changes. */
 export async function getSession() {
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  const token = localStorage.getItem(LS_TOKEN);
+  const accountRaw = localStorage.getItem(LS_ACCOUNT);
+  if (!token || !accountRaw) return null;
+  let account;
+  try { account = JSON.parse(accountRaw); } catch { return null; }
+  return { access_token: token, user: account };
 }
 
 export async function getCurrentUser() {
-  const { data } = await supabase.auth.getUser();
-  return data.user || null;
+  const session = await getSession();
+  return session ? session.user : null;
 }
 
 /** Redirects to login.html (carrying ?next=) if there is no active session. */
@@ -46,7 +118,18 @@ export async function requireSession() {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  const token = localStorage.getItem(LS_TOKEN);
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_ACCOUNT);
+  if (token) {
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/${AUTH_FUNCTION}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch { /* token is already cleared locally either way */ }
+  }
   location.href = 'index.html';
 }
 
@@ -59,9 +142,9 @@ export async function wireAuthHeader() {
   if (!area) return;
   const user = await getCurrentUser();
   if (user) {
-    const label = user.email ? user.email.split('@')[0] : 'Account';
+    const label = user.full_name || user.login_id || 'Account';
     area.innerHTML = `
-      <a href="my-registrations.html" class="nav-user-chip" title="${escapeHtml(user.email || '')}">
+      <a href="my-registrations.html" class="nav-user-chip" title="${escapeHtml(user.login_id || '')}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
         ${escapeHtml(label)}
       </a>
@@ -160,6 +243,43 @@ export async function uploadToStory(userId, blob, kind, ext = 'png') {
   if (error) throw new Error(`Upload failed (${kind}): ${error.message}`);
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
   return data.publicUrl;
+}
+
+// ------------------------------------------------------------
+// Data reads that used to be direct table SELECTs under Supabase Auth RLS.
+// Now that auth is custom, ast_registrations is locked to the service role,
+// so these go through ast-register's action-based endpoints instead.
+// ------------------------------------------------------------
+export async function fetchMyRegistrations() {
+  const session = await getSession();
+  if (!session) throw new Error('Please log in again — your session expired.');
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${REGISTER_FUNCTION}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action: 'list_my_registrations' }),
+  });
+  let json;
+  try { json = await res.json(); } catch { json = null; }
+  if (!res.ok || !json || json.ok === false) {
+    throw new Error((json && json.error) || `Something went wrong (HTTP ${res.status}). Please try again.`);
+  }
+  return json.registrations;
+}
+
+export async function fetchRegistrationById(id) {
+  const session = await getSession();
+  if (!session) throw new Error('Please log in again — your session expired.');
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${REGISTER_FUNCTION}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action: 'get_registration', id }),
+  });
+  let json;
+  try { json = await res.json(); } catch { json = null; }
+  if (!res.ok || !json || json.ok === false) {
+    throw new Error((json && json.error) || `Something went wrong (HTTP ${res.status}). Please try again.`);
+  }
+  return json.registration;
 }
 
 // ------------------------------------------------------------
