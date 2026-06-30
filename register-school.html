@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0A0E27" />
+<title>Register your school — AcademeForge Scholars Test</title>
+<link rel="icon" type="image/png" href="/IMG/af_logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container nav-inner">
+    <a href="index.html" class="brand">
+      <img src="/IMG/af_logo.png" alt="" class="brand-logo" data-logo-fallback />
+      <span class="brand-logo-fallback">AF</span>
+      <span class="brand-text">
+        <span class="brand-name">AcademeForge</span>
+        <span class="brand-sub">Scholars Test · AST</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="index.html#about">About AST</a>
+      <a href="register-student.html">Register a student</a>
+      <a href="my-registrations.html">My registrations</a>
+    </nav>
+    <div class="nav-actions" data-auth-area></div>
+    <button class="nav-burger" id="navBurger" aria-label="Open menu"><span></span></button>
+  </div>
+</header>
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mobile-drawer-panel">
+    <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close menu">✕</button>
+    <a href="index.html#about">About AST</a>
+    <a href="register-student.html">Register a student</a>
+    <a href="my-registrations.html">My registrations</a>
+  </div>
+</div>
+
+<main class="section" style="padding-block:40px 80px;">
+  <div class="container" style="max-width:760px;">
+
+    <div id="checkingArea" class="page-loader"><span class="spinner spinner-dark"></span> Checking your session…</div>
+
+    <div id="formArea" style="display:none;">
+      <div class="section-head">
+        <span class="eyebrow">Step 1 of 2</span>
+        <h2 class="mt-16">Register your school or coaching center</h2>
+        <p class="mt-16">You'll receive a unique 4-digit AST School Code the moment this is submitted — share it with your students so they can register under your institution.</p>
+      </div>
+
+      <div class="form-card">
+        <div id="formAlert"></div>
+
+        <form id="schoolForm">
+          <div class="form-section">
+            <div class="form-section-title">Institution</div>
+            <div class="form-section-sub">Tell us who is registering.</div>
+
+            <div class="form-group">
+              <label>Institution type <span class="required-mark">*</span></label>
+              <div class="chip-toggle-group" id="institutionTypeGroup">
+                <label class="chip-toggle checked"><input type="radio" name="institution_type" value="school" checked /> School</label>
+                <label class="chip-toggle"><input type="radio" name="institution_type" value="coaching_center" /> Coaching center</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="schoolName">School / center name <span class="required-mark">*</span></label>
+                <input class="input" id="schoolName" required placeholder="e.g. Patna Public School" />
+              </div>
+              <div class="form-group">
+                <label for="principalName">Principal / center head name <span class="required-mark">*</span></label>
+                <input class="input" id="principalName" required placeholder="e.g. Mr. Rakesh Sharma" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="schoolBoard">Board / affiliation</label>
+                <select class="select" id="schoolBoard">
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="State Board">State Board</option>
+                  <option value="Not Applicable">Not applicable (coaching center)</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="estimatedStudents">Estimated students participating</label>
+                <input class="input" id="estimatedStudents" type="number" min="1" placeholder="e.g. 80" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Location</div>
+            <div class="form-section-sub">Where can students find you?</div>
+
+            <div class="form-group">
+              <label for="schoolAddress">Complete address <span class="required-mark">*</span></label>
+              <textarea class="textarea" id="schoolAddress" required placeholder="Street, landmark, area"></textarea>
+            </div>
+            <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+              <div class="form-group">
+                <label for="schoolCity">City <span class="required-mark">*</span></label>
+                <input class="input" id="schoolCity" required placeholder="e.g. Patna" />
+              </div>
+              <div class="form-group">
+                <label for="schoolState">State <span class="required-mark">*</span></label>
+                <input class="input" id="schoolState" required placeholder="e.g. Bihar" />
+              </div>
+              <div class="form-group">
+                <label for="schoolPincode">Pincode <span class="required-mark">*</span></label>
+                <input class="input" id="schoolPincode" required inputmode="numeric" placeholder="e.g. 800001" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Contact</div>
+            <div class="form-section-sub">We'll use this to confirm your School Code and send updates.</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="schoolContact">Contact number <span class="required-mark">*</span></label>
+                <input class="input" id="schoolContact" required inputmode="tel" placeholder="10-digit mobile number" />
+              </div>
+              <div class="form-group">
+                <label for="schoolEmail">Official email <span class="required-mark">*</span></label>
+                <input class="input" id="schoolEmail" type="email" required placeholder="school@example.com" />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-gold btn-lg btn-block" id="submitBtn">Get my AST School Code</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- SUCCESS STATE -->
+    <div id="successArea" style="display:none;">
+      <div class="form-card text-center">
+        <div class="icon-chip" style="margin:0 auto 18px;background:var(--green-bg);color:var(--green-ok);width:56px;height:56px;border-radius:50%;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2>Your school is registered</h2>
+        <p class="mt-8">Share this code with your students — they'll need it to register for AST under your school.</p>
+        <div class="idcard-roll mt-24" style="font-size:1.8rem;" id="schoolCodeOut">0000</div>
+        <div class="flex-center gap-12 mt-16" style="flex-wrap:wrap;">
+          <button class="btn btn-outline" id="copyCodeBtn">Copy code</button>
+          <a href="register-student.html" class="btn btn-primary">Register a student now</a>
+          <a href="my-registrations.html" class="btn btn-ghost">View my registrations</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="footer section-tight">
+  <div class="container footer-bottom" style="border:none;margin:0;padding:0;">
+    <span>© <span id="yearNow"></span> AcademeForge.</span>
+    <span>AcademeForge Scholars Test — an AcademeForge Initiative.</span>
+  </div>
+</footer>
+
+<script type="module">
+  import { requireSession, wireAuthHeader, wireMobileDrawer, wireLogoFallbacks, setYear, submitRegistration, showToast } from './assets/app.js';
+
+  setYear();
+  wireMobileDrawer();
+  wireLogoFallbacks();
+
+  (async () => {
+    const session = await requireSession();
+    if (!session) return; // redirected to login.html
+    await wireAuthHeader();
+    document.getElementById('checkingArea').style.display = 'none';
+    document.getElementById('formArea').style.display = '';
+  })();
+
+  // institution type chip toggle
+  document.querySelectorAll('#institutionTypeGroup input').forEach((input) => {
+    input.addEventListener('change', () => {
+      document.querySelectorAll('#institutionTypeGroup .chip-toggle').forEach((l) => l.classList.remove('checked'));
+      input.closest('.chip-toggle').classList.add('checked');
+    });
+  });
+
+  const form = document.getElementById('schoolForm');
+  const alertBox = document.getElementById('formAlert');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alertBox.innerHTML = '';
+
+    const payload = {
+      type: 'school',
+      institution_type: document.querySelector('#institutionTypeGroup input:checked').value,
+      school_name: document.getElementById('schoolName').value.trim(),
+      principal_name: document.getElementById('principalName').value.trim(),
+      school_board: document.getElementById('schoolBoard').value,
+      estimated_students: document.getElementById('estimatedStudents').value || null,
+      school_address: document.getElementById('schoolAddress').value.trim(),
+      school_city: document.getElementById('schoolCity').value.trim(),
+      school_state: document.getElementById('schoolState').value.trim(),
+      school_pincode: document.getElementById('schoolPincode').value.trim(),
+      school_contact_number: document.getElementById('schoolContact').value.trim(),
+      school_email: document.getElementById('schoolEmail').value.trim(),
+    };
+
+    for (const key of ['school_name', 'principal_name', 'school_address', 'school_city', 'school_state', 'school_pincode', 'school_contact_number', 'school_email']) {
+      if (!payload[key]) {
+        alertBox.innerHTML = `<div class="alert alert-error">Please fill in every required field before submitting.</div>`;
+        return;
+      }
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner"></span> Submitting…`;
+    try {
+      const result = await submitRegistration(payload);
+      document.getElementById('schoolCodeOut').textContent = result.school_code;
+      document.getElementById('formArea').style.display = 'none';
+      document.getElementById('successArea').style.display = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alertBox.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Get my AST School Code';
+    }
+  });
+
+  document.getElementById('copyCodeBtn')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('schoolCodeOut').textContent.trim());
+    showToast('Code copied to clipboard', 'success');
+  });
+</script>
+</body>
+</html>
