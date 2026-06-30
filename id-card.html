@@ -124,7 +124,7 @@
 </footer>
 
 <script type="module">
-  import { supabase, requireSession, wireAuthHeader, wireMobileDrawer, wireLogoFallbacks, setYear } from './assets/app.js';
+  import { requireSession, wireAuthHeader, wireMobileDrawer, wireLogoFallbacks, setYear, fetchRegistrationById } from './assets/app.js';
 
   setYear();
   wireMobileDrawer();
@@ -145,16 +145,26 @@
       return;
     }
 
-    const { data: row, error } = await supabase
-      .from('ast_registrations')
-      .select('*')
-      .eq('id', regId)
-      .eq('registration_type', 'student')
-      .single();
+    let row;
+    try {
+      // Goes through the ast-register edge function (action: 'get_registration'),
+      // which authenticates the caller via the ast_sessions bearer token and
+      // only returns the row if it belongs to that account (owner check is
+      // done server-side, with the service role key). ast_registrations is
+      // locked to the service role under our custom auth system, so a direct
+      // anon-key table query here would be rejected by RLS — this is the
+      // supported path.
+      row = await fetchRegistrationById(regId);
+    } catch (err) {
+      document.getElementById('checkingArea').style.display = 'none';
+      document.getElementById('errorMsg').textContent = err.message || 'It may not belong to your account, or the link is wrong.';
+      document.getElementById('errorArea').style.display = '';
+      return;
+    }
 
     document.getElementById('checkingArea').style.display = 'none';
 
-    if (error || !row) {
+    if (!row || row.registration_type !== 'student') {
       document.getElementById('errorArea').style.display = '';
       return;
     }
