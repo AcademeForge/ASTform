@@ -158,6 +158,8 @@ p{color:var(--ink-soft);}
 .btn-outline:hover{border-color:var(--navy-700);background:rgba(15,21,56,.03);}
 .section-navy .btn-outline{border-color:rgba(255,255,255,.3);color:#fff;}
 .section-navy .btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.06);}
+.hero .btn-outline{border-color:rgba(255,255,255,.3);color:#fff;}
+.hero .btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.06);}
 .btn-ghost{background:transparent;color:var(--navy-950);}
 .btn-ghost:hover{background:rgba(15,21,56,.06);}
 .section-navy .btn-ghost{color:#fff;}
