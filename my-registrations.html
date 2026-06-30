@@ -71,7 +71,7 @@
 </footer>
 
 <script type="module">
-  import { supabase, requireSession, wireAuthHeader, wireMobileDrawer, wireLogoFallbacks, setYear, fmtDate, escapeHtml } from './assets/app.js';
+  import { requireSession, wireAuthHeader, wireMobileDrawer, wireLogoFallbacks, setYear, fmtDate, escapeHtml, fetchMyRegistrations, showToast } from './assets/app.js';
 
   setYear();
   wireMobileDrawer();
@@ -82,21 +82,28 @@
     if (!session) return;
     await wireAuthHeader();
 
-    const { data, error } = await supabase
-      .from('ast_registrations')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-
-    document.getElementById('checkingArea').style.display = 'none';
-    document.getElementById('pageArea').style.display = '';
-
+    const checkingArea = document.getElementById('checkingArea');
+    const pageArea = document.getElementById('pageArea');
     const wrap = document.getElementById('listWrap');
 
-    if (error) {
-      wrap.innerHTML = `<div class="alert alert-error">Could not load your registrations — please refresh.</div>`;
+    let data;
+    try {
+      // Goes through the ast-register edge function (action:
+      // 'list_my_registrations'), which authenticates the caller via the
+      // ast_sessions bearer token and reads with the service role key.
+      // ast_registrations is locked to the service role under our custom
+      // auth system, so a direct anon-key table query here would be
+      // rejected by RLS — this is the supported path.
+      data = await fetchMyRegistrations();
+    } catch (err) {
+      checkingArea.style.display = 'none';
+      pageArea.style.display = '';
+      wrap.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message || 'Could not load your registrations — please refresh.')}</div>`;
       return;
     }
+
+    checkingArea.style.display = 'none';
+    pageArea.style.display = '';
 
     if (!data || data.length === 0) {
       wrap.innerHTML = `
@@ -116,8 +123,8 @@
     const isSchool = row.registration_type === 'school';
     const title = isSchool ? escapeHtml(row.school_name) : escapeHtml(row.student_name);
     const sub = isSchool
-      ? `School code ${row.school_code} · Registered ${fmtDate(row.created_at)}`
-      : `Roll no. ${row.roll_number} · ${escapeHtml(row.linked_school_name || '')} · Registered ${fmtDate(row.created_at)}`;
+      ? `School code ${escapeHtml(row.school_code || '')} · Registered ${fmtDate(row.created_at)}`
+      : `Roll no. ${escapeHtml(row.roll_number || '')} · ${escapeHtml(row.linked_school_name || '')} · Registered ${fmtDate(row.created_at)}`;
     const icon = isSchool
       ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01"/></svg>`
       : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`;
@@ -137,10 +144,9 @@
       </div>`;
   }
 
-  document.getElementById('listWrap').addEventListener('click', async (e) => {
+  document.getElementById('listWrap').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-copy]');
     if (!btn) return;
-    const { showToast } = await import('./assets/app.js');
     navigator.clipboard.writeText(btn.dataset.copy);
     showToast('Code copied to clipboard', 'success');
   });
